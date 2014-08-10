@@ -37,14 +37,16 @@ class RSSFetcher
       }
 
 
-      # メッセージに変換する
-      msg = @on_create_message.call(@feed, entry)
-
-      if msg
+      if entry
+        # メッセージに変換する
+        msg = @on_create_message.call(@feed, entry)
         @last_fetch_time = Time.now
+
+        msg
+      else
+        nil
       end
 
-      msg
     rescue => e
       puts e.to_s
       puts e.backtrace

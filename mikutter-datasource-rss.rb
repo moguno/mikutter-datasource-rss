@@ -10,6 +10,8 @@ end
 Plugin.create(:mikutter_datasource_rss) {
   require File.join(File.dirname(__FILE__), "rss_fetcher.rb")
   require File.join(File.dirname(__FILE__), "looper.rb")
+  require "rubygems"
+  require 'sanitize'
 
 
   ICON_COLORS = {
@@ -39,8 +41,9 @@ Plugin.create(:mikutter_datasource_rss) {
       begin
         feed_title = feed.title.force_encoding("utf-8") 
         entry_title = entry.title.force_encoding("utf-8") 
+        description = Sanitize.clean(entry.description)
 
-        msg = Message.new(:message => ("【" + feed_title + "】\n" + entry_title + "\n\n[記事を読む]"), :system => true)
+        msg = Message.new(:message => ("【" + feed_title + "】\n" + entry_title + "\n\n" + description + "\n\n[記事を読む]"), :system => true)
 
         msg[:rss_feed_url] = entry.url.force_encoding("utf-8")
         msg[:created] = entry.last_updated
