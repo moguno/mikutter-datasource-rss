@@ -78,20 +78,26 @@ class RSSFetcher
       drop_time = Time.now.to_i - (24 * 60 * 60 * @drop_day)
 
       entries = feed.entries.select { |entry|
-        # 古すぎる -> 捨てる
-        if entry.last_updated != nil && entry.last_updated.to_i < drop_time then
-          false
+        begin
+          # 古すぎる -> 捨てる
+          if entry.last_updated != nil && entry.last_updated.to_i < drop_time then
+            false
 
-        # 初取得 -> 採用
-        elsif @last_load_time == nil then
-          true
+          # 初取得 -> 採用
+          elsif @last_load_time == nil then
+            true
 
-        # 前回ロード時以降に発生した -> 採用
-        elsif entry.last_updated != nil && @last_load_time < entry.last_updated then
-          true
+          # 前回ロード時以降に発生した -> 採用
+          elsif entry.last_updated != nil && @last_load_time < entry.last_updated then
+            true
 
-        # その他 -> 捨てる
-        else
+          # その他 -> 捨てる
+          else
+            false
+          end
+        rescue => e
+          puts e.to_s
+          puts s.backtrace
           false
         end
       }
@@ -117,7 +123,7 @@ class RSSFetcher
       # 最新のエントリーの時刻を記録する
       last_entry_time = entries.select { |_| _.last_updated }.max_by { |a, b|
         (a <=> b)
-      }
+      }.last_updated
 
       if last_entry_time
         @last_load_time = last_entry_time

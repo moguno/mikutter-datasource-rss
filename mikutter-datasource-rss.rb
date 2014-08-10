@@ -67,6 +67,7 @@ Plugin.create(:mikutter_datasource_rss) {
 
 
     def timer_set
+      notice("#{@id} Timer set #{UserConfig[sym("datasource_rss_period", @id)]}")
       UserConfig[sym("datasource_rss_period", @id)]
     end
 
@@ -92,6 +93,7 @@ Plugin.create(:mikutter_datasource_rss) {
           @prev_args = args
 
           @fetcher = RSSFetcher.new(*args, lambda { |*args| create_message(@id, *args) })
+          @load_counter = 0
         end
 
 
@@ -102,14 +104,24 @@ Plugin.create(:mikutter_datasource_rss) {
 
           # エントリーあり
           if msg
+            notice("#{@id} send to datasource")
             msgs = Messages.new
             msgs << msg
 
             Plugin.call(:extract_receive_message, "rss/#{@id}".to_sym, msgs)
             Plugin.call(:extract_receive_message, :rss, msgs)
-          else
+          end
+
+          # RSSロードカウンタ満了
+          @load_counter = if @load_counter <= 0
+            notice("#{@id} RSS get")
+
             # RSSを読み込む
             @fetcher.load_rss 
+
+            UserConfig[sym("datasource_rss_load_period", @id)] / UserConfig[sym("datasource_rss_period", @id)]
+          else
+            @load_counter - 1
           end
         end
       rescue => e
@@ -145,6 +157,7 @@ Plugin.create(:mikutter_datasource_rss) {
         id = i + 1
 
         UserConfig[sym("datasource_rss_period", id)] ||= 1 * 60
+        UserConfig[sym("datasource_rss_load_period", id)] ||= 1 * 60
         UserConfig[sym("datasource_rss_url", id)] ||= ""
         UserConfig[sym("datasource_rss_loop", id)] ||= false
         UserConfig[sym("datasource_rss_drop_day", id)] ||= 30
@@ -179,6 +192,7 @@ Plugin.create(:mikutter_datasource_rss) {
             result
           })
 
+          adjustment("RSS取得間隔（秒）", sym("datasource_rss_load_period", id), 1, 600)
           adjustment("メッセージ出力間隔（秒）", sym("datasource_rss_period", id), 1, 600)
           adjustment("一定期間より前のフィードは流さない（日）", sym("datasource_rss_drop_day", id), 1, 365)
           boolean("新しい記事を優先する", sym("datasource_rss_reverse", id))
