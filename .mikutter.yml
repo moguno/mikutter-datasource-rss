@@ -1,0 +1,11 @@
+---
+slug: :mikutter-datasource-rss
+depends:
+  mikutter: 3.0.3
+  plugin:
+  - settings
+  - gtk
+version: '1.0'
+author: 
+name: mikutter-datasource-rss
+description: "抽出タブのデータソースにRSSフィードを追加します"
