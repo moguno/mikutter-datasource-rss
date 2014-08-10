@@ -44,6 +44,7 @@ Plugin.create(:mikutter_datasource_rss) {
 
         msg[:rss_feed_url] = entry.url.force_encoding("utf-8")
         msg[:created] = entry.last_updated
+        msg[:modified] = Time.now
 
 
         # ユーザ
