@@ -7,6 +7,9 @@ class RSSFetcher
   require "open-uri"
 
 
+  attr_reader :feed
+
+
   # コンストラクタ
   def initialize(url, loop, drop_day, reverse, on_create_message)
     @on_create_message = on_create_message
@@ -25,7 +28,7 @@ class RSSFetcher
   # 保有データを1つ取り出す
   def fetch
     begin
-      msg = @queue_lock.synchronize {
+      entry = @queue_lock.synchronize {
         if @reverse
           @result_queue.pop
         else
@@ -33,12 +36,17 @@ class RSSFetcher
         end
       }
 
-      if msg
+
+      if entry
+        # メッセージに変換する
+        msg = @on_create_message.call(@feed, entry)
         @last_fetch_time = Time.now
-        msg[:modified] = Time.now
+
+        msg
+      else
+        nil
       end
 
-      msg
     rescue => e
       puts e.to_s
       puts e.backtrace
@@ -68,7 +76,7 @@ class RSSFetcher
 
 
       # RSSを読み込む
-      feed = open(@url) { |fp|
+      @feed = open(@url) { |fp|
         FeedNormalizer::FeedNormalizer.parse(fp)
       }
 
@@ -108,15 +116,9 @@ class RSSFetcher
       end
 
 
-      # エントリをメッセージに変換する
-      msgs = entries.map { |entry|
-        @on_create_message.call(feed, entry)
-      }
-
-
       # メッセージをキューに投入
       @queue_lock.synchronize {
-        @result_queue.concat(msgs.reverse)
+        @result_queue.concat(entries.reverse)
       }
 
 
