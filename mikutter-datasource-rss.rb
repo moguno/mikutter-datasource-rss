@@ -27,7 +27,7 @@ Plugin.create(:mikutter_datasource_rss) {
   }
 
 
-  class FetchLooper < Looper
+  class FetchLooper < MikutterDatasourceRSS::Looper
     def initialize(id)
       super()
       @id = id

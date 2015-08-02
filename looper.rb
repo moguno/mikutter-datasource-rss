@@ -1,29 +1,26 @@
 #coding: utf-8
 
-# ループする
-class Looper
-
-  def initialize
-    @stop = false
-  end
-
-
-  def start
-    proc
-    interval = timer_set
-
-    if !interval
-      @stop = true
-      return
+module MikutterDatasourceRSS
+  # ループする
+  class Looper
+    def initialize
+      @stop = false
     end
 
-    Reserver.new(interval) { start }
-  end
+    def start
+      proc
+      interval = timer_set
 
+      if !interval
+        @stop = true
+        return
+      end
 
-  def stop?
-    @stop
+      Reserver.new(interval) { start }
+    end
+
+    def stop?
+      @stop
+    end
   end
 end
-
-
