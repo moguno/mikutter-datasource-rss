@@ -5,7 +5,7 @@ depends:
   plugin:
   - settings
   - gtk
-version: '0.0.2'
-author: 
+version: '0.0.3'
+author: moguno
 name: mikutter-datasource-rss
 description: "抽出タブのデータソースにRSSフィードを追加します"
