@@ -43,7 +43,21 @@ Plugin.create(:mikutter_datasource_rss) {
         entry_title = entry.title.force_encoding("utf-8") 
         description = Sanitize.clean(entry.description)
 
-        msg = Message.new(:message => ("【" + feed_title + "】\n" + entry_title + "\n\n" + description + "\n\n[記事を読む]"), :system => true)
+        title_str = if UserConfig[sym("datasource_rss_title", id)]
+          "【#{feed_title}】\n\n"
+        else
+          ""
+        end 
+
+        desc_str = if UserConfig[sym("datasource_rss_description", id)]
+          "#{description}\n\n"
+        else
+          ""
+        end
+
+        msg_str = title_str + "#{entry_title}\n\n" + desc_str + "[記事を読む]"
+
+        msg = Message.new(:message => msg_str, :system => true)
 
         msg[:rss_feed_url] = entry.url.force_encoding("utf-8")
         msg[:created] = entry.last_updated
@@ -83,6 +97,8 @@ Plugin.create(:mikutter_datasource_rss) {
         # パラメータ変更確認
         args = [
           "datasource_rss_url",
+          "datasource_rss_title",
+          "datasource_rss_description",
           "datasource_rss_loop",
           "datasource_rss_drop_day",
           "datasource_rss_reverse",
@@ -163,6 +179,8 @@ Plugin.create(:mikutter_datasource_rss) {
         UserConfig[sym("datasource_rss_period", id)] ||= 1 * 60
         UserConfig[sym("datasource_rss_load_period", id)] ||= 1 * 60
         UserConfig[sym("datasource_rss_url", id)] ||= ""
+        UserConfig[sym("datasource_rss_title", id)] ||= false
+        UserConfig[sym("datasource_rss_description", id)] ||= false
         UserConfig[sym("datasource_rss_loop", id)] ||= false
         UserConfig[sym("datasource_rss_drop_day", id)] ||= 30
         UserConfig[sym("datasource_rss_reverse", id)] ||= false
@@ -199,6 +217,8 @@ Plugin.create(:mikutter_datasource_rss) {
           adjustment("RSS取得間隔（秒）", sym("datasource_rss_load_period", id), 1, 600)
           adjustment("メッセージ出力間隔（秒）", sym("datasource_rss_period", id), 1, 600)
           adjustment("一定期間より前のフィードは流さない（日）", sym("datasource_rss_drop_day", id), 1, 365)
+          boolean("フィードのタイトルを表示する", sym("datasource_rss_title", id))
+          boolean("概要を表示する", sym("datasource_rss_description", id))
           boolean("新しい記事を優先する", sym("datasource_rss_reverse", id))
           boolean("ループさせる", sym("datasource_rss_loop", id))
         }

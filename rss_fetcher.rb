@@ -11,7 +11,7 @@ class RSSFetcher
 
 
   # コンストラクタ
-  def initialize(url, loop, drop_day, reverse, on_create_message)
+  def initialize(url, loop, title, description, drop_day, reverse, on_create_message)
     @on_create_message = on_create_message
     @result_queue = []
     @queue_lock = Mutex.new
