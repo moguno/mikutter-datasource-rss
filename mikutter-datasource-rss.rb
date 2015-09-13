@@ -11,7 +11,10 @@ Plugin.create(:mikutter_datasource_rss) {
   require File.join(File.dirname(__FILE__), "rss_fetcher.rb")
   require File.join(File.dirname(__FILE__), "looper.rb")
   require "rubygems"
+  require "nokogiri"
   require 'sanitize'
+  require "uri"
+  require "open-uri"
 
 
   ICON_COLORS = {
@@ -43,6 +46,30 @@ Plugin.create(:mikutter_datasource_rss) {
         entry_title = entry.title.force_encoding("utf-8") 
         description = Sanitize.clean(entry.description)
 
+        html = Nokogiri::HTML(entry.content)
+
+        image_urls = html.css("img").map { |_| 
+          _.attribute("src").value
+        }.map { |_|
+          URI::unescape(_)
+        }.select { |_|
+          begin
+            pixbuf = Gdk::PixbufLoader.open { |loader|
+              data = nil
+
+              open(_) { |fp| 
+                data = fp.read
+              }
+
+              loader.write(data)
+            }.pixbuf
+
+            pixbuf.height > 30
+          rescue => e
+            false
+          end
+        }
+
         title_str = if UserConfig[sym("datasource_rss_title", id)]
           "【#{feed_title}】\n\n"
         else
@@ -57,12 +84,15 @@ Plugin.create(:mikutter_datasource_rss) {
 
         msg_str = title_str + "#{entry_title}\n\n" + desc_str + "[記事を読む]"
 
-        msg = Message.new(:message => msg_str, :system => true)
+        msg = Message.new(
+          :message => msg_str,
+          :system => true,
+          :subparts_images => [image_urls[0]],
+        )
 
         msg[:rss_feed_url] = entry.url.force_encoding("utf-8")
         msg[:created] = entry.last_updated
         msg[:modified] = Time.now
-
 
         # ユーザ
         image_url = if feed.image.empty?
