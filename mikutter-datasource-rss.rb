@@ -38,6 +38,33 @@ Plugin.create(:mikutter_datasource_rss) {
       @user = User.new(:id => -3939, :idname => "RSS")
     end
 
+    def get_image_urls(content, min_height)
+      html = Nokogiri::HTML(content)
+
+      image_urls = html.css("img").map { |_| 
+        _.attribute("src").value
+      }.map { |_|
+        URI::unescape(_)
+      }.select { |_|
+        begin
+          pixbuf = Gdk::PixbufLoader.open { |loader|
+            data = nil
+
+            open(_) { |fp| 
+              data = fp.read
+            }
+
+            loader.write(data)
+          }.pixbuf
+
+          pixbuf.height > min_height
+        rescue => e
+           false
+        end
+      }
+
+      image_urls
+    end
 
     # フィードをメッセージに変換する
     def create_message(id, feed, entry)
@@ -46,31 +73,7 @@ Plugin.create(:mikutter_datasource_rss) {
         entry_title = entry.title.force_encoding("utf-8") 
         description = Sanitize.clean(entry.description)
 
-        html = Nokogiri::HTML(entry.content)
-
-        image_urls = html.css("img").map { |_| 
-          _.attribute("src").value
-        }.map { |_|
-          URI::unescape(_)
-        }.select { |_|
-          begin
-            pixbuf = Gdk::PixbufLoader.open { |loader|
-              data = nil
-
-              open(_) { |fp| 
-                data = fp.read
-              }
-
-              loader.write(data)
-            }.pixbuf
-
-            pixbuf.height > 30
-          rescue => e
-            false
-          end
-        }
-
-        title_str = if UserConfig[sym("datasource_rss_title", id)]
+       title_str = if UserConfig[sym("datasource_rss_title", id)]
           "【#{feed_title}】\n\n"
         else
           ""
@@ -87,7 +90,7 @@ Plugin.create(:mikutter_datasource_rss) {
         msg = Message.new(
           :message => msg_str,
           :system => true,
-          :subparts_images => [image_urls[0]],
+          :subparts_images => [get_image_urls(entry.content, 30)[0]],
         )
 
         msg[:rss_feed_url] = entry.url.force_encoding("utf-8")
@@ -251,6 +254,7 @@ Plugin.create(:mikutter_datasource_rss) {
           boolean("概要を表示する", sym("datasource_rss_description", id))
           boolean("新しい記事を優先する", sym("datasource_rss_reverse", id))
           boolean("ループさせる", sym("datasource_rss_loop", id))
+          adjustment("高さがnドット以上の画像を表示する", sym("datasource_rss_min_image_height", id), 0, 999999)
         }
       }
     rescue => e
