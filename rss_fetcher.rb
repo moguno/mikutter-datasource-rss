@@ -6,9 +6,9 @@ class RSSFetcher
   require "date"
   require "open-uri"
 
-
   attr_reader :feed
 
+  HTTP_OPTIONS = {'User-Agent' =>'Opera/9.80 (Windows NT 5.1; U; ja) Presto/2.7.62 Version/11.01 '}
 
   # コンストラクタ
   def initialize(url, loop, title, description, drop_day, reverse, on_create_message)
@@ -76,7 +76,7 @@ class RSSFetcher
 
 
       # RSSを読み込む
-      @feed = open(@url) { |fp|
+      @feed = open(@url, HTTP_OPTIONS) { |fp|
         FeedNormalizer::FeedNormalizer.parse(fp)
       }
 
